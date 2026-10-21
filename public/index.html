@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Redfern Cavendish Monitor</title>
+<meta name="description" content="UK business, politics and insolvency news, live TV and markets for Redfern Cavendish.">
+<meta name="theme-color" content="#071022">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="RC Monitor">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preload" href="/fonts/pinyon-script-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/app.css?v=202610200940">
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+</head>
+<body>
+
+<!-- PIN screen (only shown when a PIN is set and this device has not signed in) -->
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gate-form" autocomplete="off">
+    <img class="gate-crest" src="/img/crest-white.png?v=202610200940" alt="Redfern Cavendish crest" width="640" height="506">
+    <span class="wordmark"><span class="wm">Redfern Cavendish</span><span class="lf">Law Firm</span></span>
+    <div class="prod"><b>Monitor</b><span>Business &amp; politics</span></div>
+    <label for="pin">Enter PIN</label>
+    <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" required>
+    <button type="submit" class="btn gold" id="pin-go">Open monitor</button>
+    <p class="gate-msg" id="gate-msg" role="alert"></p>
+  </form>
+</div>
+
+<header>
+  <div class="bar gut">
+    <a class="mark" href="#overview" aria-label="Redfern Cavendish Monitor home">
+      <img class="crest" src="/img/crest-white.png?v=202610200940" alt="Redfern Cavendish crest" width="640" height="506">
+      <span class="wordmark"><span class="wm">Redfern Cavendish</span><span class="lf">Law Firm</span></span>
+    </a>
+    <div class="prod"><b>Monitor</b><span>Business &amp; politics</span></div>
+    <div class="tvctl" id="tvctl"><button class="btn" data-tv="prev" aria-label="Previous channel">&#9664;</button><span class="tvname" id="tvname"></span><button class="btn" data-tv="next" aria-label="Next channel">&#9654;</button><button class="btn gold" id="tvsound">Sound on</button></div>
+    <div class="right">
+      <nav role="tablist" aria-label="Sections">
+        <button role="tab" id="t-overview" data-v="overview" aria-selected="true">Overview</button>
+        <button role="tab" id="t-desk" data-v="desk" aria-selected="false">UK Desk</button>
+        <button role="tab" id="t-tv" data-v="tv" aria-selected="false">TV</button>
+      </nav>
+      <span class="clock" id="clock"></span>
+      <button class="tvmode" id="tvmode" aria-pressed="false" title="Full-screen layout for the office screen">Fire TV mode</button><span class="ver" id="ver"></span>
+    </div>
+  </div>
+</header>
+
+<main class="gut">
+  <section class="view" id="v-overview" aria-labelledby="t-overview">
+    <div class="cols">
+      <div class="col">
+        <div class="panel"><div class="ph"><h2>UK Business</h2><span class="upd"></span></div><ul class="list" id="ov-biz"></ul></div>
+        <div class="panel"><div class="ph"><h2>Westminster</h2><span class="upd"></span></div><ul class="list" id="ov-pol"></ul></div>
+        <div class="panel"><div class="ph"><h2>Insolvency &amp; Courts</h2><span class="upd"></span></div><ul class="list" id="ov-ins"></ul></div>
+      </div>
+      <div class="col c-main">
+        <div class="panel stage">
+          <div class="ph"><h2>Main screen</h2><span>choose a channel below</span></div>
+          <div class="screen" id="screen">
+            <span class="onair"><span class="dot"></span>LIVE</span>
+            <div class="lowthird"><span class="k">Now showing</span><span id="lt-name"></span><span id="lt-q"></span></div>
+            <div class="hint" id="hint" hidden></div>
+            <div class="tvpad" id="tvpad"><span aria-label="Previous channel">&#9664;</span><span aria-label="Sound on or off"></span><span aria-label="Next channel">&#9654;</span></div>
+          </div>
+          <div class="stagebar">
+            <button class="btn gold" id="sound">Sound on</button>
+            <a class="btn" id="stage-link" target="_blank" rel="noopener">Open on broadcaster's site ↗</a>
+          </div>
+        </div>
+        <div class="panel"><div class="ph"><h2>Live channels</h2><span>select to enlarge</span></div><div class="tiles" id="tiles"></div></div>
+        <div class="panel"><div class="ph"><h2>UK Headlines</h2><span class="upd"></span></div><ul class="list" id="ov-brk"></ul></div>
+      </div>
+      <div class="col">
+        <div class="panel radar" id="p-radar"><div class="ph"><h2>Rain radar</h2><span id="radar-time">Lincolnshire · live</span></div>
+          <div class="radar-map" id="radar" role="img" aria-label="Live rain radar for Lincolnshire"><p class="radar-msg" id="radar-msg">Loading the radar…</p></div>
+          <div class="radar-key" aria-label="Rain intensity colours"><span>Light</span><i></i><span>Heavy</span></div>
+          <ul class="list warn" id="wx-warn"></ul></div>
+        <div class="panel app-panel" id="p-pw"><div class="ph"><h2><span class="appmark">PW</span>Petition Watch</h2><span id="pw-note"></span></div><ul class="list pw" id="ov-pw"></ul></div>
+        <div class="panel app-panel" id="p-cm"><div class="ph"><h2><span class="appmark">CM</span>Case Monitor</h2><span id="cm-note"></span></div><ul class="list pw" id="ov-cm"></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-desk" aria-labelledby="t-desk" hidden>
+    <div class="chips" id="chips">
+      <button data-f="all" aria-pressed="true">All</button>
+      <button data-f="biz" aria-pressed="false">Business</button>
+      <button data-f="pol" aria-pressed="false">Politics</button>
+      <button data-f="brk" aria-pressed="false">UK headlines</button>
+      <button data-f="ins" aria-pressed="false">Insolvency &amp; courts</button>
+    </div>
+    <div class="desk" id="desk"></div>
+  </section>
+
+  <section class="view" id="v-tv" aria-labelledby="t-tv" hidden>
+    <div class="tvgrid" id="tvgrid"></div>
+  </section>
+</main>
+
+<div class="crawl" aria-label="UK headlines">
+  <span class="lbl">UK News</span>
+  <div class="win"><div class="run" id="crawl"></div></div>
+</div>
+<div class="tape" aria-label="Market prices">
+  <span class="lbl" id="tape-lbl">Markets</span>
+  <div class="win"><div class="run" id="run"></div></div>
+</div>
+
+<script src="/vendor/leaflet/leaflet.js"></script>
+<script src="/channels.js?v=202610200940"></script>
+<script src="/app.js?v=202610200940"></script>
+</body>
+</html>

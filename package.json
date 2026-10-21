@@ -1,0 +1,11 @@
+{
+  "name": "redfern-cavendish-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Redfern Cavendish Monitor: UK business, politics and insolvency news, live TV and markets.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node scripts/dev-server.js"
+  }
+}
