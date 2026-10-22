@@ -584,18 +584,35 @@
         if (!muted) [800, 2500, 5000].forEach(ms => setTimeout(() => { command("unMute"); command("playVideo"); noCaptions(); }, ms));
         else { [800, 2500].forEach(ms => setTimeout(noCaptions, ms)); if (document.body.classList.contains("tv-on")) hint("Press the centre button for sound"); }
       });
-      scr.prepend(f);
+      scr.prepend(f); sizeMain();
       $("#sound").hidden = false;
       $("#sound").textContent = muted ? "Sound on" : "Sound off";
     } else {
       const d = document.createElement("div");
       d.className = "ph-chan";
       d.innerHTML = `<div class="chan">${esc(c.name)}</div><div class="sub">${esc(c.note)}<br><a href="${esc(c.url)}" target="_blank" rel="noopener">Open ${esc(c.name)} ↗</a></div>`;
-      scr.prepend(d);
+      scr.prepend(d); sizeMain();
       $("#sound").hidden = true;
     }
     renderTV(); renderTiles();
   }
+  // The player picks its picture quality from the size it believes it is drawn at. On the TV stick the
+  // whole page is laid out small (960 pixels wide) and scaled up by the stick, so the player took itself
+  // for a small window and sent a small picture (480p on a 1080p screen: the blur). The main screen's
+  // player is now laid out at full HD (1920x1080) and scaled down to fit its box, so it asks for the
+  // 1080p stream; what it actually gets is shown by the badge beside the channel name.
+  function sizeMain() {
+    const scr = $("#screen"), f = scr && scr.querySelector("iframe");
+    if (scr) scr.style.background = f ? "#000" : ""; // black bars, not the box's gradient, round a letterboxed picture
+    if (!f) return;
+    const w = scr.clientWidth, h = scr.clientHeight; if (!w || !h) return;
+    const z = parseFloat(document.body.style.zoom) || 1; // Silk's whole-page zoom shrinks the frame too
+    const W = 1920 / z, H = 1080 / z, k = Math.min(w / W, h / H);
+    f.style.cssText = `position:absolute;left:0;top:0;right:auto;bottom:auto;width:${W.toFixed(2)}px;height:${H.toFixed(2)}px;transform-origin:0 0;transform:translate(${((w - W * k) / 2).toFixed(2)}px,${((h - H * k) / 2).toFixed(2)}px) scale(${k.toFixed(5)})`;
+  }
+  const mainSizer = window.ResizeObserver ? new ResizeObserver(() => sizeMain()) : null;
+  if (mainSizer) mainSizer.observe($("#screen"));
+  listen(window, "resize", () => requestAnimationFrame(sizeMain));
   function command(func, args) {
     const f = $("#screen iframe");
     if (f) f.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args: args || [] }), "*");
@@ -729,7 +746,7 @@
     // The browser may keep some rows for its own bar (Silk does): lay the page out in what is left.
     document.documentElement.style.setProperty("--fit-h", on && !z && innerWidth >= 1400 ? Math.min(900, innerHeight) + "px" : "900px");
     sizePane();
-    if (typeof radar !== "undefined" && radar) setTimeout(() => { radar.invalidateSize(); radar.setView(radarCentre(), 8.75, { animate: false }); }, 50);
+    if (typeof radar !== "undefined" && radar) setTimeout(() => { radar.invalidateSize(); radar.setView(radarCentre(), 8.75, { animate: false }); }, 50);    requestAnimationFrame(sizeMain); // the picture's box has changed with the layout
   }
   listen(window, "resize", () => { fitScale(); requestAnimationFrame(() => paginate()); });
   // In Fire TV mode the right-hand pane takes whatever width a 16:9 picture leaves over, so on a
@@ -910,6 +927,7 @@
     [loopTimer, feedTimer, hintTimer].forEach(id => clearTimeout(id)); cancelAnimationFrame(bandRaf); bands.clear();
     try { if (radar) radar.remove(); } catch {} radar = null;
     try { if (wake) wake.release(); } catch {} wake = null;
+    try { if (mainSizer) mainSizer.disconnect(); } catch {}
     document.body.style.zoom = "";
   } };
 })();
