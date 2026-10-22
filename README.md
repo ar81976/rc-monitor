@@ -6,6 +6,13 @@ icon on iPhone, iPad, Android, Windows and Mac, and opens full screen like any o
 
 ---
 
+## Publishing
+
+Every push to the `main` branch on GitHub publishes the monitor: Vercel builds it, stamps a fresh
+version number (`node stamp.cjs`) and puts it live, and the screens pick it up within a minute. The
+old way, double-clicking `publish.cmd` on the office PC, still works as a fallback. Every publish is
+listed under Deployments in the Vercel dashboard, and any earlier one can be put back from there.
+
 ## 1. Put it online at monitor.redcav.com
 
 The monitor runs on **Vercel** (the same account hosts Chamberlain News).
