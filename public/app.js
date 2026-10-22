@@ -515,7 +515,7 @@
     }
     if (d.info && typeof d.info.currentTime === "number" && f.closest("#screen")) mainPos = { t: d.info.currentTime, d: Number(d.info.duration) || 0, at: Date.now() };
     if (d.info && d.info.playbackQuality && f.closest("#screen")) showQuality(d.info.playbackQuality, d.info.availableQualityLevels);
-    if (d.event === "onReady" && f.closest("#screen")) setTimeout(() => command("setPlaybackQuality", ["hd1080"]), 1200);
+    if (d.event === "onReady" && f.closest("#screen")) { setTimeout(askQuality, 1200); setTimeout(askQuality, 6000); }
     if (d.event === "onError") markDead(f.dataset.ch);
   });
   // The picture quality the player reports for the main screen, shown beside the channel name in TV
@@ -524,10 +524,25 @@
   // stream offers, which it treats as a suggestion.
   const QNAME = { tiny: "144p", small: "240p", medium: "360p", large: "480p", hd720: "720p", hd1080: "1080p", hd1440: "1440p", hd2160: "4K", highres: "4K+" };
   let qualityAsked = 0;
+  // The picture quality wanted: 720 lines on the TV stick, full HD on computers; 0 leaves the player
+  // to choose. Changed on the device with ?hd=720, ?hd=1080 or ?hd=0 (remembered); ?hd=auto returns
+  // to this rule.
+  function hdLines() { const pref = store.get("rc-hd", null); return pref !== null ? Number(pref) : document.body.classList.contains("fit") ? 720 : 1080; }
+  const QLEVEL = l => (l >= 1080 ? "hd1080" : l >= 720 ? "hd720" : l >= 480 ? "large" : "medium");
+  // The player's own choice on the TV stick sinks to 144p whenever it is pushed (a bigger frame, or a
+  // request for 1080), so on the stick the quality is pinned instead: the player is told the only
+  // quality it may use. Computers are just asked for the best on offer.
+  function askQuality() {
+    const lines = hdLines(); if (!lines) return;
+    const q = QLEVEL(lines);
+    if (document.body.classList.contains("fit")) command("setPlaybackQualityRange", [q, q]);
+    command("setPlaybackQuality", [q]);
+  }
   function showQuality(q, levels) {
     const el = $("#lt-q"); if (el) el.textContent = QNAME[q] || (q === "unknown" ? "" : q || "");
-    const best = (levels || []).find(l => l !== "auto");
-    if (best && q !== best && Date.now() - qualityAsked > 30000) { qualityAsked = Date.now(); command("setPlaybackQuality", [best]); }
+    const lines = hdLines(); if (!lines) return;
+    const want = (levels || []).includes(QLEVEL(lines)) ? QLEVEL(lines) : (levels || []).find(l => l !== "auto");
+    if (want && q !== want && Date.now() - qualityAsked > 20000) { qualityAsked = Date.now(); askQuality(); }
   }
   // A live stream that was paused for a while carries on from where it stopped, so it runs behind.
   // Once a minute, if the main screen has drifted more than 90 seconds behind, jump it back to live.
@@ -606,12 +621,11 @@
     if (scr) scr.style.background = f ? "#000" : ""; // black bars, not the box's gradient, round a letterboxed picture
     if (!f) return;
     const w = scr.clientWidth, h = scr.clientHeight; if (!w || !h) return;
-    // The size the player is told it is: 720 lines on the TV stick (asked for 1080 it dropped to 144p),
-    // full HD on computers; 0 leaves the player at its box's own size. Changed from the stick with
-    // ?hd=720, ?hd=1080 or ?hd=0 (remembered), ?hd=auto goes back to this rule.
-    const pref = store.get("rc-hd", null);
-    const lines = pref !== null ? Number(pref) : document.body.classList.contains("fit") ? 720 : 1080;
-    if (!lines) { f.style.cssText = ""; return; }
+    // On computers the player is laid out at the wanted size (so it picks that quality itself) and scaled
+    // to fit. Not on the TV stick: drawing a bigger frame there is what sent the player to 144p, so the
+    // stick keeps the frame at its box's size and pins the quality instead (askQuality).
+    const lines = hdLines();
+    if (!lines || document.body.classList.contains("fit")) { f.style.cssText = ""; return; }
     const z = parseFloat(document.body.style.zoom) || 1; // Silk's whole-page zoom shrinks the frame too
     const W = (lines * 16 / 9) / z, H = lines / z, k = Math.min(w / W, h / H);
     f.style.cssText = `position:absolute;left:0;top:0;right:auto;bottom:auto;width:${W.toFixed(2)}px;height:${H.toFixed(2)}px;transform-origin:0 0;transform:translate(${((w - W * k) / 2).toFixed(2)}px,${((h - H * k) / 2).toFixed(2)}px) scale(${k.toFixed(5)})`;
