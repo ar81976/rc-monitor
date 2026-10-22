@@ -524,14 +524,12 @@
   // stream offers, which it treats as a suggestion.
   const QNAME = { tiny: "144p", small: "240p", medium: "360p", large: "480p", hd720: "720p", hd1080: "1080p", hd1440: "1440p", hd2160: "4K", highres: "4K+" };
   let qualityAsked = 0;
-  // The picture quality wanted: 720 lines on the TV stick, full HD on computers; 0 leaves the player
-  // to choose. Changed on the device with ?hd=720, ?hd=1080 or ?hd=0 (remembered); ?hd=auto returns
-  // to this rule.
-  function hdLines() { const pref = store.get("rc-hd", null); return pref !== null ? Number(pref) : document.body.classList.contains("fit") ? 720 : 1080; }
+  // The picture quality wanted: full HD on computers; on the TV stick 0, which leaves the player to
+  // choose (480p on the 2018 stick: anything higher drops frames in its browser, and the player then
+  // dives to 144p rather than settling one step down; pinning the quality did not hold it either).
+  // Changed on the device with ?hd=720, ?hd=1080 or ?hd=0 (remembered); ?hd=auto returns to this rule.
+  function hdLines() { const pref = store.get("rc-hd", null); return pref !== null ? Number(pref) : document.body.classList.contains("fit") ? 0 : 1080; }
   const QLEVEL = l => (l >= 1080 ? "hd1080" : l >= 720 ? "hd720" : l >= 480 ? "large" : "medium");
-  // The player's own choice on the TV stick sinks to 144p whenever it is pushed (a bigger frame, or a
-  // request for 1080), so on the stick the quality is pinned instead: the player is told the only
-  // quality it may use. Computers are just asked for the best on offer.
   function askQuality() {
     const lines = hdLines(); if (!lines) return;
     const q = QLEVEL(lines);
@@ -622,8 +620,7 @@
     if (!f) return;
     const w = scr.clientWidth, h = scr.clientHeight; if (!w || !h) return;
     // On computers the player is laid out at the wanted size (so it picks that quality itself) and scaled
-    // to fit. Not on the TV stick: drawing a bigger frame there is what sent the player to 144p, so the
-    // stick keeps the frame at its box's size and pins the quality instead (askQuality).
+    // to fit. Not on the TV stick: drawing a bigger frame there is what first sent the player to 144p.
     const lines = hdLines();
     if (!lines || document.body.classList.contains("fit")) { f.style.cssText = ""; return; }
     const z = parseFloat(document.body.style.zoom) || 1; // Silk's whole-page zoom shrinks the frame too
