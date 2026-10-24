@@ -638,7 +638,9 @@
     // On computers the player is laid out at the wanted size (so it picks that quality itself) and scaled
     // to fit. Not on the TV stick: drawing a bigger frame there is what first sent the player to 144p.
     const lines = hdLines();
-    if (!lines || document.body.classList.contains("fit")) { f.style.cssText = ""; return; }
+    // (YouTube's player largely ignores a requested quality, so the frame size is what counts; the
+    // newer sticks can draw the full-size frame, so they get it too.)
+    if (!lines || (document.body.classList.contains("fit") && OLD_STICK)) { f.style.cssText = ""; return; }
     const z = parseFloat(document.body.style.zoom) || 1; // Silk's whole-page zoom shrinks the frame too
     const W = (lines * 16 / 9) / z, H = lines / z, k = Math.min(w / W, h / H);
     f.style.cssText = `position:absolute;left:0;top:0;right:auto;bottom:auto;width:${W.toFixed(2)}px;height:${H.toFixed(2)}px;transform-origin:0 0;transform:translate(${((w - W * k) / 2).toFixed(2)}px,${((h - H * k) / 2).toFixed(2)}px) scale(${k.toFixed(5)})`;
