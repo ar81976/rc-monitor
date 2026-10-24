@@ -489,9 +489,14 @@
       return id;
     } catch { return null; }
   }
+  // YouTube's privacy player (youtube-nocookie) held the new 4K Max at 480p; on the newer sticks the
+  // standard player is used instead, and asked for HD. ?yt=std or ?yt=nocookie on a device overrides.
+  if (new URLSearchParams(location.search).get("yt")) store.set("rc-yt", new URLSearchParams(location.search).get("yt") === "auto" ? null : new URLSearchParams(location.search).get("yt"));
+  const YT_STD = store.get("rc-yt", null) ? store.get("rc-yt", null) === "std" : (isFireTV && !OLD_STICK);
+  const YT_HOST = YT_STD ? "www.youtube.com" : "www.youtube-nocookie.com";
   const ytSrc = (c, extra, vid) => (vid
-    ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(vid)}?autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0&cc_load_policy=0&origin=${encodeURIComponent(location.origin)}${extra || ""}`
-    : `https://www.youtube-nocookie.com/embed/live_stream?channel=${encodeURIComponent(c.youtube)}&autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0&cc_load_policy=0&origin=${encodeURIComponent(location.origin)}${extra || ""}`);
+    ? `https://${YT_HOST}/embed/${encodeURIComponent(vid)}?autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0&cc_load_policy=0&origin=${encodeURIComponent(location.origin)}${YT_STD ? "&vq=hd1080" : ""}${extra || ""}`
+    : `https://${YT_HOST}/embed/live_stream?channel=${encodeURIComponent(c.youtube)}&autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0&cc_load_policy=0&origin=${encodeURIComponent(location.origin)}${YT_STD ? "&vq=hd1080" : ""}${extra || ""}`);
   // Captions off (TV browsers sometimes switch them on from the device's accessibility settings).
   function noCaptions() { command("unloadModule", ["captions"]); command("unloadModule", ["cc"]); }
   function watch(f) {
