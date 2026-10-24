@@ -553,7 +553,10 @@
     command("setPlaybackQuality", [q]);
   }
   function showQuality(q, levels) {
-    const el = $("#lt-q"); if (el) el.textContent = QNAME[q] || (q === "unknown" ? "" : q || "");
+    // The badge also shows the best the stream offers here, e.g. "480p of 1080p", so a limit in the
+    // stream can be told apart from a limit in the player.
+    const top = (levels || []).find(l => l !== "auto");
+    const el = $("#lt-q"); if (el) el.textContent = (QNAME[q] || (q === "unknown" ? "" : q || "")) + (top && top !== q && QNAME[top] ? " of " + QNAME[top] : "");
     const lines = hdLines(); if (!lines) return;
     const want = (levels || []).includes(QLEVEL(lines)) ? QLEVEL(lines) : (levels || []).find(l => l !== "auto");
     if (want && q !== want && Date.now() - qualityAsked > 20000) { qualityAsked = Date.now(); askQuality(); }
@@ -727,7 +730,7 @@
   const verCheck = () => fetch("/version.json?" + Date.now(), { cache: "no-store", credentials: "same-origin" })
     .then(r => r.ok ? r.json() : null).then(j => {
       if (!j || !j.v || swapping) return;
-      const vm = $("#ver"); if (vm) vm.textContent = "v" + String(VER || j.v).slice(-4);
+      const vm = $("#ver"); if (vm) vm.textContent = "v" + String(VER || j.v).slice(-4) + ((navigator.userAgent.match(/\bAFT\w+/) || [""])[0] ? " · " + navigator.userAgent.match(/\bAFT\w+/)[0] + (OLD_STICK ? " old" : "") : "");
       if (verSeen === null) verSeen = j.v;
       if (j.v === (VER || verSeen)) return;
       swapping = true;
