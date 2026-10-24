@@ -130,9 +130,15 @@
   // it is drawn. The animation is stopped and started afresh rather than having its length changed
   // while running: a running animation given a new length jumps to a different point, and at the end
   // of a loop that can set off a run of jumps that looks like the band racing.
+  // How the bands are moved on a TV: "js" (by script, a whole pixel at a time: right for the 2018
+  // Fire TV Stick 4K, whose browser breaks up text it draws between pixels) or "css" (the browser's
+  // own animation, smoother on the newer sticks). Decided by the stick's model unless set on the
+  // device with ?bands=js or ?bands=css (remembered; ?bands=auto goes back to the rule).
+  const OLD_STICK = /\bAFT(MM|T|N|B|M|RS|SS|KMST|A|S|KA)\b/i.test(navigator.userAgent); // 2018 4K stick and older
+  function bandMode() { const pref = store.get("rc-bands", null); return pref === "js" || pref === "css" ? pref : OLD_STICK ? "js" : "css"; }
   function restartScroll(el, pxPerSec) {
     const w = el.scrollWidth / 2;
-    if (document.body.classList.contains("fit")) {
+    if (document.body.classList.contains("fit") && bandMode() === "js") {
       // On the TV the bands are moved by script, a whole screen pixel at a time (see bandTick).
       el.style.animation = "none"; el.style.transform = "translateX(0)";
       if (w) bands.set(el, { x: 0, w, speed: pxPerSec, last: 0 }); else bands.delete(el);
@@ -147,25 +153,25 @@
   // ever by whole screen pixels, so every frame is drawn on the pixel grid.
   const bands = new Map();
   let bandRaf = 0;
-  // Each band moves the same whole number of screen pixels every frame (the nearest to its set
-  // speed): a band that moved by time alone had to alternate one-pixel and two-pixel steps to keep
-  // its speed, and that alternation shows as a judder. A frame the browser skipped is made up for
-  // with a double step. "Screen pixels" allows for the page's own zoom and the TV's pixel ratio.
+  // Each band moves the same whole number of pixels every frame (the nearest to its set speed): a
+  // band that moved by time alone had to alternate one-pixel and two-pixel steps to keep its speed,
+  // and that alternation shows as a judder. A frame the browser skipped is made up for with a double
+  // step. The position is always a whole number of the page's own pixels: text drawn at a fraction
+  // of a pixel loses pieces of its letters on the TV.
   function bandTick(now) {
     bandRaf = requestAnimationFrame(bandTick);
-    const grid = ((window.visualViewport && window.visualViewport.scale) || 1) * (window.devicePixelRatio || 1) * (parseFloat(document.body.style.zoom) || 1);
     bands.forEach((b, el) => {
       if (!el.isConnected) { bands.delete(el); return; }
       if (b.last) {
         const dt = Math.min(0.1, (now - b.last) / 1000);
         b.dt = b.dt ? b.dt * 0.95 + dt * 0.05 : dt; // the frame interval, smoothed (16.7 ms at 60 Hz, 20 ms at 50 Hz)
         const frames = Math.max(1, Math.min(6, Math.round(dt / b.dt)));
-        const step = Math.max(1, Math.round(b.speed * b.dt * grid));
-        b.x += frames * step / grid;
+        const step = Math.max(1, Math.round(b.speed * b.dt));
+        b.x += frames * step;
       }
       b.last = now;
       if (b.x >= b.w) { b.x -= b.w; el.dispatchEvent(new Event("animationiteration")); if (bands.get(el) !== b) return; }
-      el.style.transform = `translateX(${-(Math.round(b.x * grid) / grid).toFixed(3)}px)`;
+      el.style.transform = `translateX(${-Math.round(b.x)}px)`;
     });
   }
   bandRaf = requestAnimationFrame(bandTick);
@@ -754,6 +760,7 @@
   // TV Mode (one channel, full screen) is one press away.
   const qs = new URLSearchParams(location.search);
   if (qs.get("hd") !== null) store.set("rc-hd", qs.get("hd") === "auto" ? null : qs.get("hd"));
+  if (qs.get("bands") !== null) store.set("rc-bands", qs.get("bands") === "auto" ? null : qs.get("bands"));
   document.body.classList.toggle("fit", isFireTV || qs.has("fit"));
   // Fire TV sticks report a small screen (960x540). The TV overview is laid out for 1600x900
   // and scaled down to fit, so it looks the same as on the iPad instead of squashing up.
