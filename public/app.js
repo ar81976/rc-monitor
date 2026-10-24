@@ -147,12 +147,22 @@
   // ever by whole screen pixels, so every frame is drawn on the pixel grid.
   const bands = new Map();
   let bandRaf = 0;
+  // Each band moves the same whole number of screen pixels every frame (the nearest to its set
+  // speed): a band that moved by time alone had to alternate one-pixel and two-pixel steps to keep
+  // its speed, and that alternation shows as a judder. A frame the browser skipped is made up for
+  // with a double step. "Screen pixels" allows for the page's own zoom and the TV's pixel ratio.
   function bandTick(now) {
     bandRaf = requestAnimationFrame(bandTick);
-    const grid = ((window.visualViewport && window.visualViewport.scale) || 1) * (window.devicePixelRatio || 1);
+    const grid = ((window.visualViewport && window.visualViewport.scale) || 1) * (window.devicePixelRatio || 1) * (parseFloat(document.body.style.zoom) || 1);
     bands.forEach((b, el) => {
       if (!el.isConnected) { bands.delete(el); return; }
-      if (b.last) b.x += Math.min(0.2, (now - b.last) / 1000) * b.speed;
+      if (b.last) {
+        const dt = Math.min(0.1, (now - b.last) / 1000);
+        b.dt = b.dt ? b.dt * 0.95 + dt * 0.05 : dt; // the frame interval, smoothed (16.7 ms at 60 Hz, 20 ms at 50 Hz)
+        const frames = Math.max(1, Math.min(6, Math.round(dt / b.dt)));
+        const step = Math.max(1, Math.round(b.speed * b.dt * grid));
+        b.x += frames * step / grid;
+      }
       b.last = now;
       if (b.x >= b.w) { b.x -= b.w; el.dispatchEvent(new Event("animationiteration")); if (bands.get(el) !== b) return; }
       el.style.transform = `translateX(${-(Math.round(b.x * grid) / grid).toFixed(3)}px)`;
