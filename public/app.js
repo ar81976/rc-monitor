@@ -489,10 +489,10 @@
       return id;
     } catch { return null; }
   }
-  // YouTube's privacy player (youtube-nocookie) held the new 4K Max at 480p; on the newer sticks the
-  // standard player is used instead, and asked for HD. ?yt=std or ?yt=nocookie on a device overrides.
+  // The privacy player (youtube-nocookie) is used everywhere; the standard player gave the 4K Max no
+  // better picture. ?yt=std on a device switches to it (?yt=auto back).
   if (new URLSearchParams(location.search).get("yt")) store.set("rc-yt", new URLSearchParams(location.search).get("yt") === "auto" ? null : new URLSearchParams(location.search).get("yt"));
-  const YT_STD = store.get("rc-yt", null) ? store.get("rc-yt", null) === "std" : (isFireTV && !OLD_STICK);
+  const YT_STD = store.get("rc-yt", null) ? store.get("rc-yt", null) === "std" : false; // tried on the 4K Max: same 480p, and no quality report
   const YT_HOST = YT_STD ? "www.youtube.com" : "www.youtube-nocookie.com";
   const ytSrc = (c, extra, vid) => (vid
     ? `https://${YT_HOST}/embed/${encodeURIComponent(vid)}?autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0&cc_load_policy=0&origin=${encodeURIComponent(location.origin)}${YT_STD ? "&vq=hd1080" : ""}${extra || ""}`
