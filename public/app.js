@@ -544,7 +544,7 @@
   // choose (480p on the 2018 stick: anything higher drops frames in its browser, and the player then
   // dives to 144p rather than settling one step down; pinning the quality did not hold it either).
   // Changed on the device with ?hd=720, ?hd=1080 or ?hd=0 (remembered); ?hd=auto returns to this rule.
-  function hdLines() { const pref = store.get("rc-hd", null); return pref !== null ? Number(pref) : document.body.classList.contains("fit") ? 0 : 1080; }
+  function hdLines() { const pref = store.get("rc-hd", null); return pref !== null ? Number(pref) : document.body.classList.contains("fit") && OLD_STICK ? 0 : 1080; } // newer sticks (4K Max): full HD
   const QLEVEL = l => (l >= 1080 ? "hd1080" : l >= 720 ? "hd720" : l >= 480 ? "large" : "medium");
   function askQuality() {
     const lines = hdLines(); if (!lines) return;
