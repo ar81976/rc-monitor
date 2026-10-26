@@ -121,8 +121,9 @@ def _day(v) -> str:
 
 
 def petition_rows(store, days: int = 0) -> list[dict]:
-    """Today's petitions from Petition Watch's store (days=0), newest first, as they are found through the
-    day; each is marked "new", so the monitor's band leads with it and its panel flags it."""
+    """Today's new petitions found on CE-File (days=0), newest first, as they are found through the day;
+    each is marked "new", so the monitor's band leads with it and its panel flags it. Petitions known
+    only from Gazette advertisements are left out."""
     import datetime as _dt
     if store is None or not getattr(store, "petitions", None):
         return []
@@ -131,7 +132,9 @@ def petition_rows(store, days: int = 0) -> list[dict]:
     changed = getattr(store, "changed", {}) or {}
     rows = []
     for key, p in store.petitions.items():
-        seen = _day(p.get("cefile_seen")) or _day(p.get("first_seen"))
+        # Only petitions Petition Watch found on CE-File: the Gazette's advertisements (with their
+        # hearing dates) are older petitions coming up for hearing, not new ones, and stay off the monitor.
+        seen = _day(p.get("cefile_seen"))
         if not seen or seen < cutoff:
             continue
         court = (p.get("court") or "").strip()
